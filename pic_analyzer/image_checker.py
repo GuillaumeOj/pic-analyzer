@@ -5,7 +5,7 @@ ImageSizePx = tuple[int, int]
 ImageSizeCm = tuple[int, int]
 ImageSizeIn = tuple[float, float]
 
-IMAGE_PATH = "./300dpi.jpg"
+IMAGE_PATH = "./pic_analyzer/medias/300dpi.jpg"
 INCH_TO_CM = 2.54
 MIN_DPI = 300
 STANDARD_ASPECT_RATIOS = [2 / 3, 3 / 4, 1, 1 / 3]
@@ -111,8 +111,3 @@ class ImageChecker:
     def get_size_cm_to_in(size_cm: ImageSizeCm) -> ImageSizeIn:
         width_cm, height_cm = size_cm
         return width_cm / INCH_TO_CM, height_cm / INCH_TO_CM
-
-
-if __name__ == "__main__":
-    checker = ImageChecker()
-    checker.check_image()
