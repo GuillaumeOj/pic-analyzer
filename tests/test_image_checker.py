@@ -6,6 +6,8 @@ from PIL import Image
 
 from pic_analyzer.image_checker import CheckError, ImageChecker
 
+Image.MAX_IMAGE_PIXELS = None
+
 
 def compute_image(
     path: Path,
@@ -26,6 +28,7 @@ def test_image_aspect_ratio(tmp_path_factory):
     checker = ImageChecker(image_with_invalid_aspect_ratio)
     checker._load_image()
 
+    # The aspect ratio is not one of the standard
     with pytest.raises(CheckError):
         checker._check_aspect_ratio()
 
@@ -33,6 +36,32 @@ def test_image_aspect_ratio(tmp_path_factory):
     checker = ImageChecker(valid_aspect_ratio)
     checker._load_image()
     assert checker._check_aspect_ratio() is True
+
+
+def test_image_max_print_size(tmp_path_factory):
+    images_dir = tmp_path_factory.mktemp("images")
+    small_image_path = compute_image(images_dir)
+
+    checker = ImageChecker(small_image_path)
+    checker._load_image()
+
+    # The image is too small for printing
+    with pytest.raises(CheckError):
+        checker._get_max_print_size()
+
+    valid_image_path = compute_image(images_dir, size=(2361, 2361))
+    checker = ImageChecker(valid_image_path)
+    checker._load_image()
+
+    max_print_size = checker._get_max_print_size()
+    assert max_print_size == (20, 20)
+
+    valid_image_path = compute_image(images_dir, size=(14163, 21249))
+    checker = ImageChecker(valid_image_path)
+    checker._load_image()
+
+    max_print_size = checker._get_max_print_size()
+    assert max_print_size == (120, 180)
 
 
 def test_image_checker(capsys, tmp_path_factory):

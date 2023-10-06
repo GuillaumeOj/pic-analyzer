@@ -87,11 +87,14 @@ class ImageChecker:
             image_short_side_in, image_long_side_in = self.get_size_cm_to_in(
                 standard_size
             )
-            is_max_print_size = (
-                MIN_DPI * 2
-                <= image_width_px / image_short_side_in
-                + image_height_px / image_long_side_in
-            )
+            # DPI is calculated for each side of the image with this formula:
+            # DPI = image_width_px / print_width_inch
+            # and
+            # DPI = image_height_px / print_height_inch
+            # It could be simplified by additioning both values
+            is_max_print_size = MIN_DPI * 2 <= round(
+                image_width_px / image_short_side_in
+            ) + round(image_height_px / image_long_side_in)
             if is_max_print_size:
                 return standard_size
 
