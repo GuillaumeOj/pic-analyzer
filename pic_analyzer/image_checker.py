@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PIL import Image
 from PIL.Image import Image as PILImage
 
@@ -5,7 +7,6 @@ ImageSizePx = tuple[int, int]
 ImageSizeCm = tuple[int, int]
 ImageSizeIn = tuple[float, float]
 
-IMAGE_PATH = "./pic_analyzer/medias/300dpi.jpg"
 INCH_TO_CM = 2.54
 MIN_DPI = 300
 STANDARD_ASPECT_RATIOS = [2 / 3, 3 / 4, 1, 1 / 3]
@@ -41,12 +42,27 @@ STANDARD_SIZES = [
 ]
 
 
+class ImageFileError(Exception):
+    pass
+
+
 class CheckError(Exception):
     pass
 
 
 class ImageChecker:
     image: PILImage
+
+    def __init__(self, image_path: str) -> None:
+        self.image_path = Path(image_path)
+        try:
+            expanded_path = self.image_path.expanduser()
+        except RuntimeError:
+            pass
+        else:
+            self.image_path = expanded_path
+
+        return None
 
     def _check_aspect_ratio(self) -> bool:
         image_width_px, image_height_px = self.image_size_px
@@ -85,9 +101,18 @@ class ImageChecker:
             f"is: {image_width_px}px x {image_height_px}px.",
         )
 
-    def check_image(self) -> None:
-        self.image = Image.open(IMAGE_PATH)
+    def _load_image(self) -> None:
+        try:
+            self.image = Image.open(self.image_path)
+        except FileNotFoundError:
+            raise ImageFileError("The given image path is not correct.")
 
+    def check_image(self) -> None:
+        try:
+            self._load_image()
+        except ImageFileError as e:
+            print(e)
+            return None
         # Rotate the image because with standard sizes, width is always the short side
         image_width_px, image_height_px = self.image_size_px
         if image_width_px > image_height_px:
@@ -97,7 +122,7 @@ class ImageChecker:
             self._check_aspect_ratio()
             self._get_max_print_size()
         except CheckError as e:
-            print(e)
+            [print(arg) for arg in e.args]
         else:
             print("Your image is valid for printing.")
 
