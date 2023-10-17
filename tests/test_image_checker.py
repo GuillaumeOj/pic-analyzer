@@ -2,12 +2,13 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageCms
 
 from pic_analyzer.image_checker import CheckError, ImageChecker
 
 Image.MAX_IMAGE_PIXELS = None
 
+DEFAULT_PROFILE_PATH = Path(__file__).parent / "fixtures/icc_profile_adobe_srgb.icc"
 
 
 @pytest.fixture
@@ -20,6 +21,7 @@ def compute_image(
     mode: str = "RGB",
     size: tuple[int, int] = (1, 1),
     image_ext: str = "jpg",
+    profile_path: Path = DEFAULT_PROFILE_PATH,
 ) -> str:
     """This creates an image with Pillow for the tests
     and returns the str path of this image."""
@@ -27,6 +29,9 @@ def compute_image(
     # Create the image
     image = Image.new(mode, size)
     image_file_path = image_dir_path / f"{ uuid4().hex }.{image_ext}"
+
+    # Load the profile
+    icc_profile = ImageCms.getOpenProfile(str(profile_path))
 
     # Save the image and return the path of the image
     image.save(image_file_path, icc_profile=icc_profile.tobytes())
@@ -73,7 +78,23 @@ def test_get_image_max_print_size(tmp_path_dir):
     assert max_print_size == (120, 180)
 
 
+def test_check_profile_description(tmp_path_dir):
+    adobe_rgb_1998_icc_file = (
+        Path(__file__).parent / "fixtures/icc_profile_adobe_rgb_1998.icc"
+    )
 
+    # The image as a non standard profile
+    image_with_non_standard_profile = compute_image(
+        tmp_path_dir, profile_path=adobe_rgb_1998_icc_file
+    )
+    image_checker = load_image_checker(image_with_non_standard_profile)
+    with pytest.raises(CheckError):
+        image_checker._check_profile_description()
+
+    # The image as a standard profile
+    image_with_standard_profile = compute_image(tmp_path_dir)
+    image_checker = load_image_checker(image_with_standard_profile)
+    assert image_checker._check_profile_description() is True
 
 
 def test_check_image(capsys, tmp_path_dir):

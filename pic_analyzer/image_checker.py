@@ -1,6 +1,7 @@
+from io import BytesIO
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageCms
 from PIL.Image import Image as PILImage
 
 ImageSizePx = tuple[int, int]
@@ -10,6 +11,7 @@ ImageSizeIn = tuple[float, float]
 INCH_TO_CM = 2.54
 MIN_DPI = 300
 STANDARD_ASPECT_RATIOS = [2 / 3, 3 / 4, 1, 1 / 3]
+STANDARD_PROFILE_DESCRIPTIONS = ["sRGB IEC61966-2.1"]
 STANDARD_SIZES = [
     (20, 20),
     (20, 30),
@@ -78,6 +80,23 @@ class ImageChecker:
 
         return True
 
+    def _check_profile_description(self) -> bool:
+        icc_profile_data = self.image.info.get("icc_profile")
+        if not icc_profile_data:
+            raise CheckError("The profile of the image is missing.")
+
+        decoded_icc_profile = BytesIO(icc_profile_data)
+        icc_profile = ImageCms.ImageCmsProfile(decoded_icc_profile)
+        profile_description = icc_profile.profile.profile_description
+
+        if profile_description not in STANDARD_PROFILE_DESCRIPTIONS:
+            raise CheckError(
+                f"The profile of the image ({profile_description}) is not "
+                f"one of {str(STANDARD_PROFILE_DESCRIPTIONS)}"
+            )
+
+        return True
+
     def _get_max_print_size(self) -> ImageSizeCm:
         """This get the max print size for having at least a resolution of MIN_DPI.
         It only check with the standard sizes from STANDARD_SIZES"""
@@ -106,8 +125,9 @@ class ImageChecker:
 
     def _load_image(self) -> None:
         try:
-            self.image = Image.open(self.image_path)
-        except FileNotFoundError:
+            with open(self.image_path, "rb") as fp:
+                self.image = Image.open(fp)
+        except OSError:
             raise ImageFileError("The given image path is not correct.")
 
     def check_image(self) -> None:
@@ -124,6 +144,7 @@ class ImageChecker:
         try:
             self._check_aspect_ratio()
             self._get_max_print_size()
+            self._check_profile_description()
         except CheckError as e:
             [print(arg) for arg in e.args]
         else:
