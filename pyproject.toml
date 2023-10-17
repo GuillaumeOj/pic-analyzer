@@ -7,7 +7,6 @@ authors = ["Guillaume <7831777+GuillaumeOj@users.noreply.github.com>"]
 [tool.poetry.dependencies]
 python = "^3.11"
 Pillow = "^10.0.1"
-sympy = "^1.12"
 
 [tool.poetry.dev-dependencies]
 black = "^23.9.1"
@@ -15,7 +14,6 @@ flake8 = "^6.1.0"
 isort = "^5.12.0"
 docformatter = "^1.7.5"
 ipdb = "^0.13.13"
-decorator = "^5.1.1"
 ipython = "^8.16.1"
 pytest = "^7.4.2"
 
