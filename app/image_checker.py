@@ -8,6 +8,7 @@ ImageSizePx = tuple[int, int]
 ImageSizeCm = tuple[int, int]
 ImageSizeIn = tuple[float, float]
 
+ALLOWED_IMAGES_EXTENSIONS = ["jpg", "jpeg", "tiff"]
 INCH_TO_CM = 2.54
 MIN_DPI = 300
 STANDARD_ASPECT_RATIOS = [2 / 3, 3 / 4, 1, 1 / 3]
