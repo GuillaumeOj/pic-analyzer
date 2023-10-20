@@ -1,5 +1,6 @@
-from image_checker import ImageChecker
+from fastapi import FastAPI
 
-image_path = str(input("Give image path:"))
-checker = ImageChecker(image_path)
-checker.check_image()
+from app.routers import checker
+
+checker_app = FastAPI()
+checker_app.include_router(checker.router)
