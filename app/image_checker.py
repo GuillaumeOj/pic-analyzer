@@ -1,6 +1,7 @@
+import io
 from io import BytesIO
-from pathlib import Path
 
+from fastapi import UploadFile
 from PIL import Image, ImageCms
 from PIL.Image import Image as PILImage
 
@@ -56,26 +57,22 @@ class CheckError(Exception):
 class ImageChecker:
     image: PILImage
 
-    def __init__(self, image_path: str) -> None:
-        self.image_path = Path(image_path)
-        try:
-            expanded_path = self.image_path.expanduser()
-        except RuntimeError:
-            pass
-        else:
-            self.image_path = expanded_path
-
-        return None
+    def _round_aspect_ratio(self, aspect_ratio: float) -> float:
+        return round(aspect_ratio, ndigits=2)
 
     def _check_aspect_ratio(self) -> bool:
         image_width_px, image_height_px = self.image_size_px
 
-        if (
-            image_aspect_ratio := image_width_px / image_height_px
-        ) not in STANDARD_ASPECT_RATIOS:
+        image_aspect_ratio = self._round_aspect_ratio(image_width_px / image_height_px)
+        rounded_standard_aspect_ratios = [
+            self._round_aspect_ratio(aspect_ratio)
+            for aspect_ratio in STANDARD_ASPECT_RATIOS
+        ]
+
+        if image_aspect_ratio not in rounded_standard_aspect_ratios:
             raise CheckError(
                 f"The image aspect ratio ({image_aspect_ratio}) "
-                f"is not one of {STANDARD_ASPECT_RATIOS}.",
+                f"is not one of {rounded_standard_aspect_ratios}.",
                 "You may crop your image with a standard ratio.",
             )
 
@@ -97,6 +94,11 @@ class ImageChecker:
             )
 
         return True
+
+    def _get_print_sizes(self, max_print_size: ImageSizeCm) -> list[ImageSizeCm]:
+        max_print_size_index = STANDARD_SIZES.index(max_print_size)
+
+        return STANDARD_SIZES[: max_print_size_index + 1]
 
     def _get_max_print_size(self) -> ImageSizeCm:
         """This get the max print size for having at least a resolution of MIN_DPI.
@@ -124,19 +126,18 @@ class ImageChecker:
             f"is: {image_width_px}px x {image_height_px}px.",
         )
 
-    def _load_image(self) -> None:
+    def _load_image(self, image_data: bytes) -> None:
         try:
-            with open(self.image_path, "rb") as fp:
-                self.image = Image.open(fp)
+            self.image = Image.open(io.BytesIO(image_data))
         except OSError:
-            raise ImageFileError("The given image path is not correct.")
+            raise ImageFileError("The given image is not correct.")
 
-    def check_image(self) -> None:
+    def check_image(self, image_data: bytes) -> list[ImageSizeCm]:
         try:
-            self._load_image()
+            self._load_image(image_data)
         except ImageFileError as e:
-            print(e)
-            return None
+            raise e
+
         # Rotate the image because with standard sizes, width is always the short side
         image_width_px, image_height_px = self.image_size_px
         if image_width_px > image_height_px:
@@ -144,14 +145,12 @@ class ImageChecker:
 
         try:
             self._check_aspect_ratio()
-            self._get_max_print_size()
             self._check_profile_description()
+            max_print_size = self._get_max_print_size()
         except CheckError as e:
-            [print(arg) for arg in e.args]
-        else:
-            print("Your image is valid for printing.")
+            raise e
 
-        return None
+        return self._get_print_sizes(max_print_size)
 
     @property
     def image_size_px(self) -> ImageSizePx:
