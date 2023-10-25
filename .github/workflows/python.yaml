@@ -35,7 +35,7 @@ jobs:
           key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install the project dependencies
         run: poetry install
-      - name: Run lints checks
+      - name: Run lint checks
         run: |
           poetry run black --check .
           poetry run isort --check .
