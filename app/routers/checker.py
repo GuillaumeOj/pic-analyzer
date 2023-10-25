@@ -28,10 +28,10 @@ async def check_image(image_file: UploadFile) -> list[ImageSizeCm]:
             detail=f"The file type should be one of {ALLOWED_IMAGES_EXTENSIONS}",
         )
 
-    image = await image_file.read()
+    image_data = await image_file.read()
 
     try:
-        print_sizes = ImageChecker().check_image(image)
+        print_sizes = ImageChecker().check_image(image_data)
     except ImageFileError:
         raise HTTPException(status_code=400, detail="The file seems incorrect")
     except CheckError as e:

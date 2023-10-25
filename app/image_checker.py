@@ -1,7 +1,6 @@
 import io
 from io import BytesIO
 
-from fastapi import UploadFile
 from PIL import Image, ImageCms
 from PIL.Image import Image as PILImage
 
