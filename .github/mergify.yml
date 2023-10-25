@@ -1,0 +1,9 @@
+pull_request_rules:
+  - name: "Automatic merge when CI passes"
+    conditions:
+      - check-success=ci
+      - base=main
+      - "author=@GuillaumeOj"
+    actions:
+      merge:
+        method: squash
